@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>瞳聚未来 - 共享眼科智慧</title>
+    <style>
+        /* ================= 基础变量与重置 ================= */
+        :root {
+            --primary-blue: #004691; 
+            --accent-blue: #00A1FF; 
+            --light-blue-bg: #F0F5FF; 
+            --white: #FFFFFF;
+            --text-main: #333333;
+            --text-light: #757575;
+            --risk-low: #52C41A; 
+            --risk-medium: #FAAD14; 
+            --risk-high: #F5222D; 
+            --border-radius: 12px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); outline: none; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--light-blue-bg); color: var(--text-main); line-height: 1.6; padding-bottom: 70px; }
+        
+        .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; }
+        .view { display: none; padding: 20px; animation: fadeIn 0.4s ease; padding-bottom: 90px;} 
+        .view.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* ================= 通用 UI 组件 ================= */
+        h1 { font-size: 24px; color: var(--primary-blue); text-align: center; margin-bottom: 10px; }
+        .subtitle { font-size: 14px; color: var(--text-light); text-align: center; margin-bottom: 25px; }
+        h2 { font-size: 18px; margin: 20px 0 10px; color: var(--primary-blue); border-left: 4px solid var(--accent-blue); padding-left: 10px;}
+        .card { background: var(--white); border-radius: var(--border-radius); padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #eee; transition: transform 0.2s, box-shadow 0.2s;}
+        .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .disclaimer-card { background: #E6F7FF; color: var(--primary-blue); font-size: 13px; border-left: 4px solid var(--accent-blue); }
+        .points-display { font-size: 18px; font-weight: bold; color: var(--accent-blue); text-align: center; margin-bottom: 15px;}
+
+        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; text-align: center; border-radius: 25px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; margin-top: 15px;}
+        .btn-primary { background: var(--primary-blue); color: var(--white); box-shadow: 0 4px 12px rgba(0, 70, 145, 0.3); }
+        .btn-primary:active { transform: scale(0.98); background: #003670; }
+        .btn-secondary { background: var(--white); color: var(--primary-blue); border: 2px solid var(--primary-blue); }
+        .btn-danger { background: var(--risk-high); color: var(--white); }
+        .btn-accent { background: var(--accent-blue); color: var(--white); }
+        .btn-disabled { background: #E0E0E0; color: #9E9E9E; cursor: not-allowed; box-shadow: none; }
+        .return-btn-container { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 90; display: flex; gap: 10px;}
+
+        /* ================= 1. 主页 ================= */
+        .main-header { display: flex; align-items: center; justify-content: space-between; background: var(--white); padding: 10px 20px; border-bottom: 1px solid #eee;}
+        .main-logo { font-size: 20px; font-weight: 900; color: var(--primary-blue); letter-spacing: 1px; }
+        .hero-banner { width: 100%; height: 200px; background: linear-gradient(135deg, #004691 0%, #0077E6 100%); position: relative; display: flex; align-items: center; justify-content: center; color: var(--white); border-radius: var(--border-radius); margin-bottom: 20px; overflow: hidden; border: 2px solid var(--accent-blue);}
+        .hero-banner-content { text-align: center; position: relative; z-index: 10; padding: 20px;}
+        .hero-banner-title { font-size: 32px; font-weight: 900; text-transform: uppercase; }
+        .hero-banner-subtitle { font-size: 16px; margin-top: 5px;}
+        .hero-banner-icon { font-size: 50px; position: absolute; top: 20px; right: 20px; opacity: 0.5;}
+        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+
+        /* ================= 2. 隐私协议页 ================= */
+        .consent-text { font-size: 14px; color: var(--text-main); max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; }
+        .consent-label { display: flex; align-items: center; font-size: 14px; color: var(--text-light); gap: 10px; cursor: pointer; }
+        .consent-label input { width: 18px; height: 18px; accent-color: var(--primary-blue); }
+
+        /* ================= 3. 问卷页 ================= */
+        .progress-bar { width: 100%; height: 6px; background: #e0e0e0; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        .progress-inner { height: 100%; background: var(--accent-blue); width: 0%; transition: width 0.3s ease; }
+        .option-btn { background: var(--white); border: 2px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px;}
+        .option-btn:hover, .option-btn.selected { border-color: var(--primary-blue); background-color: #E6F7FF; color: var(--primary-blue); font-weight: bold;}
+        .option-btn-icon { width: 24px; height: 24px; border: 2px solid #ccc; border-radius: 50%; }
+
+        /* ================= 4. 报告页 ================= */
+        .risk-meter { width: 150px; height: 150px; border-radius: 50%; border: 12px solid #eee; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; flex-direction: column; position: relative;}
+        .tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .tag { padding: 6px 14px; border-radius: 18px; font-size: 12px; font-weight: bold; }
+
+        /* ================= 5. 转介合作医院页 (地图+医生) ================= */
+        .map-placeholder { width: 100%; height: 180px; background: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80') center/cover; border-radius: 8px; position: relative; display:flex; align-items:center; justify-content:center; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.2);}
+        .map-overlay { background: rgba(255,255,255,0.95); padding: 12px 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: bold; color: var(--primary-blue); box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+        .doctor-card { background: #fafafa; border-radius: 8px; padding: 15px; margin-top: 12px; border-left: 4px solid var(--accent-blue); cursor: pointer;}
+        .doctor-card:hover { background: #f0f8ff; border-color: var(--primary-blue); }
+        .doctor-card h4 { color: var(--primary-blue); margin-bottom: 5px; font-size: 16px; display: flex; justify-content: space-between;}
+        .doctor-card p { font-size: 13px; color: var(--text-light); }
+        .hospital-title { font-size: 15px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; gap: 5px;}
+
+        /* ================= 6. 打卡方案大厅 & 网格页 ================= */
+        .plan-list-card { display: flex; align-items: center; justify-content: space-between; cursor: pointer; border-left: 4px solid var(--primary-blue); margin-bottom: 15px;}
+        .plan-list-card:hover { border-color: var(--accent-blue); background: #f8fbff; }
+        .plan-icon { font-size: 28px; margin-right: 15px; background: #F0F5FF; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;}
+        
+        .checkin-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 15px; }
+        .checkin-day { aspect-ratio: 1; background: var(--white); border-radius: 8px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--text-light); cursor: pointer; transition: 0.3s; }
+        .checkin-day.completed { background: var(--risk-low); color: var(--white); border-color: var(--risk-low); box-shadow: 0 2px 6px rgba(82,196,26,0.2);}
+        .checkin-day.locked { background: #f9f9f9; color: #ccc; cursor: not-allowed; }
+        .checkin-day.active-today { background: #FFFBE6; color: var(--risk-medium); border-color: var(--risk-medium); cursor: pointer; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(250,173,20,0.4); } 70% { box-shadow: 0 0 0 6px rgba(250,173,20,0); } 100% { box-shadow: 0 0 0 0 rgba(250,173,20,0); } }
+
+        /* ================= 7. 高清积分商城 ================= */
+        .mall-item-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+        .mall-item-left { display: flex; align-items: center; gap: 15px; flex: 1; }
+        .mall-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-shrink: 0;}
+
+        /* ================= 8. 弹窗 (上传/分享) ================= */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px;}
+        .modal-content { background: var(--white); border-radius: var(--border-radius); padding: 20px; max-width: 400px; width: 100%; text-align: center; position: relative;}
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999;}
+        .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 30px; margin: 15px 0; cursor: pointer; color: var(--text-light); transition: 0.3s;}
+        .upload-area:hover { border-color: var(--accent-blue); background: #f0f8ff; color: var(--accent-blue);}
+
+        /* ================= 9. 智能助手 ================= */
+        .assistant-widget { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--primary-blue); border-radius: 50%; color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,70,145,0.3); cursor: pointer; z-index: 100; transition: 0.3s ease; border: 2px solid var(--accent-blue);}
+        .assistant-widget.open { border-radius: var(--border-radius); width: 320px; height: 450px; bottom: 80px; right: 20px; flex-direction: column; align-items: stretch; justify-content: flex-start; background: var(--white); border: 2px solid var(--primary-blue); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+        .chat-header { display: none; padding: 12px; background: var(--primary-blue); color: var(--white); border-top-left-radius: 10px; border-top-right-radius: 10px; font-weight: bold; font-size: 15px; justify-content: space-between; align-items: center;}
+        .chat-header span { cursor: pointer; font-size: 20px;}
+        .assistant-widget.open .chat-header { display: flex; }
+        .chat-body { display: none; flex: 1; padding: 15px; overflow-y: auto; background: #fafafa;}
+        .assistant-widget.open .chat-body { display: block; }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: var(--border-radius); margin-bottom: 12px; font-size: 14px; clear: both; line-height: 1.5;}
+        .bubble-bot { background: var(--white); float: left; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
+        .bubble-user { background: var(--primary-blue); color: var(--white); float: right; border-bottom-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
+        .chat-input-area { display: none; padding: 10px; border-top: 1px solid #eee; gap: 8px; background: var(--white); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; display: flex; }
+        .assistant-widget.open .chat-input-area { display: flex; }
+        .chat-input { flex: 1; border: 1px solid #ddd; padding: 10px 12px; border-radius: 20px; font-size: 14px; background: #f9f9f9;}
+        .assistant-icon { position: absolute; font-size: 24px; transition: opacity 0.3s;}
+        .assistant-widget.open .assistant-icon { opacity: 0; }
+
+        /* ================= 打印 PDF 适配 ================= */
+        @media print {
+            body { background: white; padding: 0; }
+            .app-container { max-width: 100%; box-shadow: none; }
+            .view { display: none !important; }
+            #reportPage { display: block !important; padding: 0; }
+            .btn, .return-btn-container, .assistant-widget { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <div id="homePage" class="view active-view">
+        <header class="main-header">
+            <span class="main-logo">瞳聚未来</span>
+            <div style="font-size: 12px; color: var(--text-light);">守护孩子眼里的光</div>
+        </header>
+        
+        <div class="hero-banner" style="margin-top: 15px;">
+            <div class="hero-banner-content">
+                <p class="hero-banner-title">瞳聚未来</p>
+                <p class="hero-banner-subtitle">共享眼科智慧 - 守护健康视界</p>
+            </div>
+            <div class="hero-banner-icon">👁️</div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn btn-primary" onclick="navigateTo('consentPage')">🔍 智能筛查测评</button>
+            <button class="btn btn-accent" onclick="navigateTo('planSelectionPage')">📅 关爱习惯打卡</button>
+        </div>
+
+        <h2>积分商城</h2>
+        <div class="card" onclick="navigateTo('mallPage')" style="cursor: pointer; border-left: 4px solid var(--accent-blue);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="color: var(--primary-blue); margin-bottom: 5px;">🎁 积分换好礼</h3>
+                    <p style="color: var(--text-light); font-size: 13px;">配镜折扣、免费线下诊断等你来兑</p>
+                </div>
+                <div style="font-size: 20px; color: var(--accent-blue);">➡</div>
+            </div>
+        </div>
+        
+        <div class="points-display">当前积分: <span class="points-val">50</span> 💎</div>
+
+        <div class="card disclaimer-card" style="margin-top: 25px;">
+            <p>💡 <b>公益辅助：</b>本项目数据脱敏保护。测试结果仅供辅助参考，不可替代线下正规医疗诊断。</p>
+        </div>
+    </div>
+
+    <div id="consentPage" class="view">
+        <h1>数据收集与隐私保护协议</h1>
+        <p class="subtitle">数据安全与合规保护</p>
+        <div class="card">
+            <div class="consent-text">
+                <p><b>1. 数据收集：</b>我们将收集受测青少年的用眼行为、视觉症状等信息。仅用于生成屈光异常风险评估报告。</p>
+                <p><b>2. 数据保护：</b>严格加密与脱敏处理，保障个人信息安全。</p>
+                <p><b>3. 未成年人保护：</b>根据法律，未成年人需由监护人完成此测试。</p>
+                <p><b>4. 转介服务：</b>如果您需要预约线下复核，我们将在获得您明确点击后，将脱敏编号共享给合作的专业眼科医疗机构。</p>
+            </div>
+            <label class="consent-label">
+                <input type="checkbox" id="consentCheckbox" onchange="toggleConsentBtn()">
+                <span>我是家长/监护人，我已阅读并同意以上协议</span>
+            </label>
+        </div>
+        <button id="consentBtn" class="btn btn-disabled" disabled onclick="startAssessment()">进入筛查测评</button>
+        <button class="btn btn-secondary" onclick="navigateTo('homePage')">返回主界面</button>
+    </div>
+
+    <div id="questionnairePage" class="view">
+        <div class="progress-bar"><div id="progressInner" class="progress-inner"></div></div>
+        <div id="questionContainer" class="card"></div>
+        <button class="btn btn-secondary" onclick="saveAndExit()">保存并退出</button>
+    </div>
+
+    <div id="reportPage" class="view">
+        <h1>视力健康风险报告</h1>
+        <p class="subtitle">受测编号: TJWL20230001</p>
+        
+        <div class="card" style="text-align: center;">
+            <div id="riskMeter" class="risk-meter">
+                <span id="riskLevelText">计算中...</span>
+                <span style="font-size: 14px; color:#757575;">综合评级</span>
+            </div>
+            <div id="riskTags" class="tags"></div>
+            <p id="riskDescription" style="color: var(--text-light); font-size: 14px; margin-bottom: 10px;"></p>
+        </div>
+
+        <div id="medicalAdviceCard" class="card" style="border-left: 4px solid #eee;">
+            <h2 id="adviceTitle" style="margin-top:0;">👨‍⚕️ 医疗建议</h2>
+            <p id="adviceText" style="font-size: 14px;"></p>
+        </div>
+
+        <button id="ctaBtn" class="btn btn-primary"></button>
+        <button class="btn btn-accent" onclick="window.print()">📥 下载 PDF 版报告</button>
+        <button class="btn btn-secondary" onclick="shareReport()">📤 一键分享报告给家人</button>
+        <button class="btn btn-secondary" style="margin-top: 15px;" onclick="navigateTo('homePage')">返回主界面</button>
+    </div>
+
+    <div id="referralPage" class="view">
+        <h1>线下医疗机构转介</h1>
+        <p class="subtitle">大连市官方合作眼科中心</p>
+        
+        <div class="card">
+            <h3 style="color: var(--primary-blue); margin-bottom: 10px;">📍 智能就诊路线 (高德避堵策略)</h3>
+            <div class="map-placeholder">
+                <div class="map-overlay">
+                    🗺️ 路线规划完成<br>
+                    <span style="font-size: 12px; font-weight: normal; color: #666;">起点：您当前位置 &nbsp;|&nbsp; 终点：大连市第三人民医院</span>
+                </div>
+            </div>
+            <p style="color: var(--risk-low); font-size: 13px; font-weight: bold;">🟢 推荐最优路线：乘坐地铁1号线转公交，当前路况畅通，避开长春路拥堵，预计用时 25 分钟。</p>
+        </div>
+
+        <h2 style="margin-top: 25px;">推荐权威专家</h2>
+        
+        <div class="hospital-title">🏥 大连市第三人民医院 (眼科中心)</div>
+        <div class="doctor-card" onclick="alert('已向该院发送您的脱敏复核请求，稍后将有导诊联系您。')">
+            <h4>👨‍⚕️ 祝莹 <span style="font-size: 12px; background: #E6F7FF; color: var(--primary-blue); padding: 2px 8px; border-radius: 10px;">主任医师</span></h4>
+            <p><b>擅长：</b>白内障超声乳化摘除联合人工晶体植入术、微创玻璃体视网膜手术、视网膜脱离修复术等。</p>
+            <div style="text-align: right; color: var(--accent-blue); font-size: 12px; margin-top: 5px; font-weight: bold;">一键挂号预约 ➡</div>
+        </div>
+
+        <div class="hospital-title">🏥 大连医科大学附属第一医院</div>
+        <div class="doctor-card" onclick="alert('已向该院发送您的脱敏复核请求，稍后将有导诊联系您。')">
+            <h4>👨‍⚕️ 马翔 <span style="font-size: 12px; background: #E6F7FF; color: var(--primary-blue); padding: 2px 8px; border-radius: 10px;">主任医师</span></h4>
+            <p><b>擅长：</b>疑难复杂玻璃体视网膜疾病微创手术，严重糖网病、网脱、黄斑微创手术等。</p>
+            <div style="text-align: right; color: var(--accent-blue); font-size: 12px; margin-top: 5px; font-weight: bold;">一键挂号预约 ➡</div>
+        </div>
+
+        <div class="hospital-title">🏥 大连医科大学附属第二医院</div>
+        <div class="doctor-card" onclick="alert('已向该院发送您的脱敏复核请求，稍后将有导诊联系您。')">
+            <h4>👩‍⚕️ 刘菲 <span style="font-size: 12px; background: #E6F7FF; color: var(--primary-blue); padding: 2px 8px; border-radius: 10px;">主任医师</span></h4>
+            <p><b>擅长：</b>白内障超声乳化与玻璃体切割联合手术、复杂视网膜脱离、黄斑疾病、视网膜血管疾病等。</p>
+            <div style="text-align: right; color: var(--accent-blue); font-size: 12px; margin-top: 5px; font-weight: bold;">一键挂号预约 ➡</div>
+        </div>
+        
+        <div class="return-btn-container">
+            <button class="btn btn-secondary" onclick="navigateTo('homePage')">返回主页</button>
+        </div>
+    </div>
+
+    <div id="planSelectionPage" class="view">
+        <h1>选择关爱打卡计划</h1>
+        <p class="subtitle">第一步：选择一个最适合孩子的护眼目标</p>
+        <div class="points-display">当前积分: <span class="points-val">50</span> 💎</div>
+
+        <div id="plansContainer">
+            </div>
+        
+        <div class="return-btn-container">
+            <button class="btn btn-secondary" onclick="navigateTo('homePage')">返回主页</button>
+        </div>
+    </div>
+
+    <div id="checkinPage" class="view">
+        <h1 id="checkinTitle">方案加载中...</h1>
+        <p class="subtitle" id="checkinDesc">描述加载中...</p>
+        
+        <div class="card" style="background: linear-gradient(to right, #004691, #00A1FF); color: white; text-align: center; border: none;">
+            <h2 style="color: white; border: none; margin: 0;">21天习惯养成记</h2>
+            <p style="font-size: 13px; opacity: 0.9; margin-top: 5px;">点击发光的【今日】格子，拍照记录打卡</p>
+        </div>
+
+        <div class="card">
+            <div id="checkinGrid" class="checkin-grid"></div>
+        </div>
+        
+        <div class="return-btn-container">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="navigateTo('planSelectionPage')">更换方案</button>
+            <button class="btn btn-primary" style="flex: 2;" onclick="navigateTo('homePage')">返回主页</button>
+        </div>
+    </div>
+
+    <div id="mallPage" class="view">
+        <h1>积分商城</h1>
+        <p class="subtitle">兑换实物好礼与医疗折扣</p>
+        <div class="points-display">当前可用积分: <span class="points-val">50</span> 💎</div>
+
+        <div class="card mall-item" onclick="alert('即将跳转购买界面...')">
+            <div class="mall-item-wrapper">
+                <div class="mall-item-left">
+                    <img src="https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&w=400&q=80" alt="眼科诊断" class="mall-img">
+                    <div>
+                        <h3 style="color: var(--primary-blue); font-size: 16px;">免费线下诊断券</h3>
+                        <p style="font-size: 12px; color: var(--text-light); margin-top: 4px;">爱尔眼科合作医院单次免挂号/验光费</p>
+                    </div>
+                </div>
+                <div style="color: var(--accent-blue); font-weight: bold; font-size: 15px;">💎 500</div>
+            </div>
+        </div>
+
+        <div class="card mall-item" onclick="alert('即将跳转购买界面...')">
+            <div class="mall-item-wrapper">
+                <div class="mall-item-left">
+                    <img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=400&q=80" alt="精美镜架" class="mall-img">
+                    <div>
+                        <h3 style="color: var(--primary-blue); font-size: 16px;">配镜 8 折优惠券</h3>
+                        <p style="font-size: 12px; color: var(--text-light); margin-top: 4px;">大连市指定全品牌配镜中心通用</p>
+                    </div>
+                </div>
+                <div style="color: var(--accent-blue); font-weight: bold; font-size: 15px;">💎 600</div>
+            </div>
+        </div>
+
+        <div class="card mall-item" onclick="alert('即将跳转购买界面...')">
+            <div class="mall-item-wrapper">
+                <div class="mall-item-left">
+                    <img src="https://images.unsplash.com/photo-1507676184212-d0330a15233c?auto=format&fit=crop&w=400&q=80" alt="护眼台灯" class="mall-img">
+                    <div>
+                        <h3 style="color: var(--primary-blue); font-size: 16px;">国AA级护眼台灯</h3>
+                        <p style="font-size: 12px; color: var(--text-light); margin-top: 4px;">全光谱防蓝光，免费包邮到家</p>
+                    </div>
+                </div>
+                <div style="color: var(--accent-blue); font-weight: bold; font-size: 15px;">💎 2000</div>
+            </div>
+        </div>
+        
+        <div class="return-btn-container">
+            <button class="btn btn-secondary" onclick="navigateTo('homePage')">返回主页</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="uploadModal" class="modal-overlay" onclick="closeModal('uploadModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="closeModal('uploadModal')">✕</span>
+        <h2 style="margin-top: 10px; border:none; text-align: center;">📸 上传打卡凭证</h2>
+        <p style="font-size: 13px; color: var(--text-light);">请上传今日完成该计划的真实照片（如户外风景、做眼操的背影等，数据仅限本地存储审核）</p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileUploadInput').click()">
+            <div style="font-size: 40px; margin-bottom: 10px;">➕</div>
+            <p>点击这里调用相机或相册</p>
+        </div>
+        <input type="file" id="fileUploadInput" accept="image/*" style="display:none" onchange="finishUpload(event)">
+    </div>
+</div>
+
+<div id="shareModal" class="modal-overlay" onclick="closeModal('shareModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="closeModal('shareModal')">✕</span>
+        <h2 style="border:none; text-align: center;">🎉 打卡成功！</h2>
+        <div style="width: 100%; height: 160px; background: linear-gradient(135deg, #004691 0%, #00A1FF 100%); border-radius: 8px; margin: 15px 0; display: flex; align-items: center; justify-content: center; color: var(--white); flex-direction: column; padding: 20px;">
+            <div style="font-size: 30px; margin-bottom: 10px;">🏅</div>
+            <p id="shareDetails" style="font-size: 15px; font-weight: bold; text-align: center;"></p>
+        </div>
+        <button class="btn btn-primary" onclick="realShareAction()">📲 分享朋友圈领积分 (+5 💎)</button>
+    </div>
+</div>
+
+<div id="assistantWidget" class="assistant-widget" onclick="toggleAssistant(event)">
+    <div class="assistant-icon">💬</div>
+    <div class="chat-header">
+        瞳聚 AI 助手
+        <span onclick="toggleAssistant(event)">✕</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-bubble bubble-bot">您好！我是您的专属眼科 AI 助手。您可以向我提问，例如：<br>👉 "防蓝光眼镜有用吗"<br>👉 "近视能治好吗"<br>👉 "阿托品滴眼液"<br>👉 "散瞳验光有危害吗"</div>
+    </div>
+    <div class="chat-input-area" onclick="event.stopPropagation()">
+        <input type="text" id="chatInput" class="chat-input" placeholder="输入您的护眼疑问..." onkeypress="if(event.key === 'Enter') askAssistant()">
+        <button class="btn" style="width: 60px; padding: 5px; margin: 0; font-size: 13px; border-radius: 20px;" onclick="askAssistant()">发送</button>
+    </div>
+</div>
+
+
+<script>
+    // ================= 全局状态 =================
+    let points = 50;
+    let currentCheckinDay = 0;
+    let currentSelectedPlanTitle = "";
+
+    // 路由导航
+    function navigateTo(viewId) {
+        document.querySelectorAll('.view').forEach(view => view.classList.remove('active-view'));
+        document.getElementById(viewId).classList.add('active-view');
+        window.scrollTo(0,0);
+        updatePointsDisplays();
+    }
+
+    function updatePointsDisplays() {
+        document.querySelectorAll('.points-val').forEach(el => el.innerText = points);
+    }
+
+    // ================= 隐私协议 =================
+    function toggleConsentBtn() {
+        const checkbox = document.getElementById('consentCheckbox');
+        const btn = document.getElementById('consentBtn');
+        if(checkbox.checked) {
+            btn.classList.remove('btn-disabled');
+            btn.classList.add('btn-primary');
+            btn.disabled = false;
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-disabled');
+            btn.disabled = true;
+        }
+    }
+
+    // ================= 问卷测评 (完整10题) =================
+    const questions = [
+        { text: "住在教室后排看黑板，是否感到字迹模糊？", points: [0, 5, 10] },
+        { text: "看电视或远处物体时，是否有眯眼动作？", points: [0, 5, 10] },
+        { text: "孩子看远处物体是否有重影或重叠感？", points: [0, 5, 15] },
+        { text: "孩子连续看书超过20分钟，是否感到干涩或想闭眼？", points: [0, 5, 10] },
+        { text: "平均每天在户外阳光下的活动时间累计大约是？", points: [0, 5, 20] },
+        { text: "孩子写字时的姿势是否趴在桌子上或握笔太低？", points: [0, 10, 15] },
+        { text: "父母一方是否有600度以上高度近视？", points: [0, 10] },
+        { text: "父母双方是否有600度以上高度近视？", points: [0, 20] },
+        { text: "每天非学习目的电子产品累计超过？", points: [0, 10, 25] },
+        { text: "阅读时，眼睛距离书本是否经常少于1尺(33厘米)？", points: [0, 10, 20] }
+    ];
+
+    const optionsText = [
+        ["清晰无压力", "偶尔模糊", "经常模糊，看不清"],
+        ["从不", "偶尔有，提醒后纠正", "频繁出现"],
+        ["否", "偶尔有", "经常有"],
+        ["是", "一般", "经常"],
+        ["2小时以上 (良好)", "1-2小时", "不足1小时 (风险)"],
+        ["标准一寸/坐直", "握得太低/偶尔弯腰", "趴在桌子上写字"],
+        ["均无", "一方是"],
+        ["均无", "双方都是"],
+        ["40分钟以内", "40-120分钟", "超过2小时"],
+        ["标准", "低握/偶尔靠近", "趴着阅读"]
+    ];
+
+    let currentQuestionIndex = 0;
+    let totalScore = 0;
+
+    function startAssessment() {
+        currentQuestionIndex = 0;
+        totalScore = 0;
+        navigateTo('questionnairePage');
+        displayQuestion();
+    }
+
+    function displayQuestion() {
+        if(currentQuestionIndex >= questions.length) {
+            showReport();
+            return;
+        }
+        const question = questions[currentQuestionIndex];
+        const container = document.getElementById('questionContainer');
+        
+        const progress = (currentQuestionIndex / questions.length) * 100;
+        document.getElementById('progressInner').style.width = `${progress}%`;
+
+        let html = `<h2>${currentQuestionIndex + 1}. ${question.text}</h2>`;
+        
+        optionsText[currentQuestionIndex].forEach((text, index) => {
+            // 注意：这里需要传入 DOM 元素(this)来实现点击高亮反馈
+            let scoreValue = question.points[index];
+            html += `
+                <div class="option-btn" onclick="handleAnswer(${scoreValue}, this)">
+                    <div class="option-btn-icon"></div>
+                    ${text}
+                </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    function handleAnswer(score, element) {
+        totalScore += score;
+        currentQuestionIndex++;
+        element.classList.add('selected');
+        setTimeout(displayQuestion, 250); 
+    }
+
+    function saveAndExit() {
+        alert("进度已成功保存（脫敏存档）。下次可以继续测评。");
+        navigateTo('homePage');
+    }
+
+    // ================= 风险报告 =================
+    function showReport() {
+        navigateTo('reportPage');
+        const meter = document.getElementById('riskMeter'), levelText = document.getElementById('riskLevelText'), tagsContainer = document.getElementById('riskTags'), descText = document.getElementById('riskDescription'), adviceTitle = document.getElementById('adviceTitle'), adviceText = document.getElementById('adviceText'), adviceCard = document.getElementById('medicalAdviceCard'), ctaBtn = document.getElementById('ctaBtn');
+
+        let riskColor, riskLevel, riskDesc, adviceTitleTxt, adviceTxt;
+        let tagsHTML = "";
+
+        if (totalScore < 30) {
+            riskColor = 'var(--risk-low)'; riskLevel = '低风险';
+            riskDesc = '习惯良好，视力状况健康。';
+            adviceTitleTxt = '🟢 健康建议';
+            adviceTxt = '继续保持优良的用眼习惯，建议每半年进行一次常规眼科健康检查。进入打卡计划保持习惯。';
+            tagsHTML = `<span class="tag" style="background: #E6FFFB; color: var(--risk-low);">表现优异</span>`;
+            ctaBtn.innerText = '加入关爱打卡计划 (+5💎)';
+            ctaBtn.onclick = () => navigateTo('planSelectionPage');
+        } else if (totalScore < 60) {
+            riskColor = 'var(--risk-medium)'; riskLevel = '中风险';
+            riskDesc = '存在视力疲劳或轻度屈光异常隐患。';
+            adviceTitleTxt = '🟡 复核建议';
+            adviceTxt = '建议在1个月内，前往专业眼科医疗机构进行验光和眼轴测量。点击下方预约复核。';
+            tagsHTML = `<span class="tag" style="background: #FFFBE6; color: var(--risk-medium);">用眼疲劳疑似</span>`;
+            ctaBtn.innerText = '立即预约线下复核 (大连合作医院) ➡';
+            ctaBtn.onclick = () => navigateTo('referralPage');
+        } else {
+            riskColor = 'var(--risk-high)'; riskLevel = '高风险';
+            riskDesc = '屈光异常风险较高！请务必进行临床确诊。';
+            adviceTitleTxt = '🔴 紧急建议';
+            adviceTxt = '请在1周内，前往专业医院或合作医院进行散瞳验光。明确诊断由资质医生完成。';
+            tagsHTML = `<span class="tag" style="background: #FFF1F0; color: var(--risk-high);">高度疑似屈光异常</span>`;
+            ctaBtn.innerText = '🔴 立即转介大连权威医疗机构 ➡';
+            ctaBtn.onclick = () => navigateTo('referralPage');
+        }
+
+        meter.style.borderColor = riskColor; meter.style.color = riskColor;
+        levelText.innerText = riskLevel; tagsContainer.innerHTML = tagsHTML;
+        descText.innerText = riskDesc;
+        adviceTitle.innerText = adviceTitleTxt; adviceTitle.style.color = riskColor;
+        adviceCard.style.borderColor = riskColor; adviceText.innerText = adviceTxt;
+    }
+
+    function shareReport() {
+        if (navigator.share) {
+            navigator.share({ title: '我的视力风险报告', text: '我在瞳聚未来测试了视力风险，一起来关注眼健康！', url: window.location.href }).catch(console.error);
+        } else {
+            alert('报告链接已复制，去微信粘贴发送给家人吧！');
+        }
+    }
+
+    // ================= 打卡方案大厅与网格 =================
+    const planData = [
+        { id: 1, icon: "🌞", title: "小太阳户外挑战", desc: "每天进行 2 小时户外活动，让自然光刺激多巴胺分泌，有效抑制眼轴变长。" },
+        { id: 2, icon: "🥦", title: "营养护眼小能手", desc: "每日摄入深绿色蔬菜或胡萝卜，补充叶黄素与维生素A，拍照记录护眼餐。" },
+        { id: 3, icon: "⏱️", title: "20-20-20 法则", desc: "每近距离用眼 20 分钟，看向 20 英尺（约6米）外，保持至少 20 秒。" },
+        { id: 4, icon: "🛌", title: "无屏安睡计划", desc: "睡前 1 小时内绝对不看任何电子屏幕，用听书或聊天代替，让睫状肌彻底放松。" },
+        { id: 5, icon: "💆", title: "眼保健操达人", desc: "每天上下午各认真做一次眼保健操，找准穴位，缓解眼部疲劳。" }
+    ];
+
+    function initPlans() {
+        const container = document.getElementById('plansContainer');
+        let html = "";
+        planData.forEach(plan => {
+            html += `
+                <div class="card plan-list-card" onclick="enterCheckinPage(${plan.id})">
+                    <div style="display: flex; align-items: center;">
+                        <div class="plan-icon">${plan.icon}</div>
+                        <div>
+                            <h3 style="color: var(--primary-blue); font-size: 16px; margin-bottom: 4px;">${plan.title}</h3>
+                            <p style="font-size: 12px; color: var(--text-light);">${plan.desc}</p>
+                        </div>
+                    </div>
+                    <div style="color: var(--accent-blue); font-size: 20px; font-weight: bold;">➡</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function enterCheckinPage(planId) {
+        const plan = planData.find(p => p.id === planId);
+        currentSelectedPlanTitle = plan.title;
+        document.getElementById('checkinTitle').innerText = `${plan.icon} ${plan.title}`;
+        document.getElementById('checkinDesc').innerText = plan.desc;
+        generateCheckinGrid();
+        navigateTo('checkinPage');
+    }
+
+    function generateCheckinGrid() {
+        const grid = document.getElementById('checkinGrid');
+        grid.innerHTML = "";
+        const completedDays = 3; // 模拟已坚持3天
+        for (let i = 1; i <= 21; i++) {
+            let dayDiv = document.createElement('div');
+            dayDiv.className = 'checkin-day';
+            dayDiv.innerText = i;
+            
+            if (i <= completedDays) {
+                dayDiv.classList.add('completed');
+                dayDiv.innerHTML = "✔"; 
+            } else if (i === completedDays + 1) {
+                dayDiv.classList.add('active-today'); 
+                dayDiv.onclick = () => { currentCheckinDay = i; document.getElementById('uploadModal').style.display = 'flex'; };
+            } else {
+                dayDiv.classList.add('locked');
+            }
+            grid.appendChild(dayDiv);
+        }
+    }
+
+    // ================= 上传与分享 =================
+    function finishUpload(event) {
+        if(event.target.files.length > 0) {
+            closeModal('uploadModal');
+            let grid = document.getElementById('checkinGrid').children;
+            let target = grid[currentCheckinDay - 1];
+            target.classList.remove('active-today');
+            target.classList.add('completed');
+            target.innerHTML = "✔";
+            target.onclick = null;
+            
+            document.getElementById('shareModal').style.display = 'flex';
+            document.getElementById('shareDetails').innerText = `【${currentSelectedPlanTitle}】\n已连续打卡 ${currentCheckinDay} 天！\n好习惯正在生根发芽 🌱`;
+            event.target.value = ''; // 清空选择
+        }
+    }
+
+    function realShareAction() {
+        const shareText = `我在瞳聚未来参加了【${currentSelectedPlanTitle}】，连续打卡 ${currentCheckinDay} 天！一起来守护视力吧~`;
+        if (navigator.share) {
+            navigator.share({ title: '瞳聚未来打卡', text: shareText, url: window.location.href })
+            .then(() => { addSharePoints(); })
+            .catch((e) => { console.log("分享取消"); });
+        } else {
+            alert('复制成功！去微信朋友圈粘贴分享即可获得积分。');
+            addSharePoints();
+        }
+    }
+
+    function addSharePoints() {
+        points += 5;
+        updatePointsDisplays();
+        closeModal('shareModal');
+        setTimeout(() => alert('分享成功！获得 5 个积分 💎'), 300);
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // ================= 智能助手 =================
+    const botKnowledge = {
+        "防蓝光": "防蓝光眼镜能阻挡部分短波蓝光，缓解长时间看屏幕带来的<b>视疲劳</b>。但它<b>不能预防近视</b>，预防近视的核心依然是减少近距离用眼和增加户外活动。",
+        "近视能治好吗": "真性近视是<b>不可逆</b>的（眼轴已经变长）。目前的手段（如角膜塑形镜OK镜、低浓度阿托品、激光手术）只能<b>延缓加深</b>或改变屈光状态，不能“治愈”近视。",
+        "阿托品": "低浓度阿托品滴眼液（如0.01%）是目前医学界公认能有效延缓青少年近视进展的药物之一。但必须在<b>医生开具处方和指导下</b>使用，不能自行乱滴。",
+        "ok镜": "OK镜（角膜塑形镜）通过夜间佩戴压平角膜，白天可以暂时恢复清晰视力，并能有效延缓近视发展。适合8岁以上、近视增长较快的孩子，需前往专业医院验配。",
+        "假性近视怎么恢复": "假性近视是睫状肌痉挛引起的。通过<b>散瞳药水放松睫状肌</b>、每天2小时户外活动、严格遵守20-20-20原则，视力可以恢复正常。",
+        "散瞳验光有危害吗": "散瞳药水对眼睛本身<b>没有危害</b>。它只是暂时让瞳孔放大、睫状肌麻痹，以测出最真实的屈光度数。期间会有些畏光、看近处模糊，药效过后会完全恢复。",
+        "散光怎么治": "轻度规则散光如果没有引起视力下降或疲劳，通常无需特殊治疗。如果影响视力，主要通过<b>佩戴柱镜（框架眼镜）</b>或定制的隐形眼镜矫正。",
+        "膳食建议": "多吃富含：<br>1. <b>维生素A</b>（胡萝卜、猪肝）预防干眼<br>2. <b>叶黄素</b>（菠菜、玉米）保护黄斑<br>3. <b>Omega-3</b>（深海鱼）缓解眼干。限制过多甜食摄入。"
+    }
+
+    function toggleAssistant(event) {
+        event.stopPropagation(); 
+        document.getElementById('assistantWidget').classList.toggle('open');
+    }
+
+    function askAssistant() {
+        const input = document.getElementById('chatInput');
+        const question = input.value.trim();
+        if (!question) return;
+
+        appendBubble('bubble-user', question);
+        input.value = ''; 
+        
+        setTimeout(() => {
+            let answer = "";
+            for (let key in botKnowledge) {
+                if (question.includes(key) || question.toLowerCase().includes(key.toLowerCase())) { 
+                    answer = botKnowledge[key]; 
+                    break; 
+                }
+            }
+            if(!answer) answer = "抱歉，作为本地前端体验版 AI，我的知识库有限。建议您咨询专业医生，或尝试询问我：<b>'防蓝光'、'OK镜'、'近视能治好吗'、'阿托品'、'假性近视'</b>等关键词。";
+            appendBubble('bubble-bot', answer);
+        }, 600);
+    }
+
+    function appendBubble(className, text) {
+        const body = document.getElementById('chatBody');
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${className}`;
+        bubble.innerHTML = text;
+        body.appendChild(bubble);
+        body.scrollTop = body.scrollHeight; 
+    }
+
+    // 初始化应用
+    initPlans();
+</script>
+</body>
+</html>
